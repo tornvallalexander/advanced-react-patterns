@@ -15,13 +15,24 @@ function Toggle({children}) {
     // child.props.toggle = toggle
     // but this will result in error, since the object is not extensible
     // what React wants us to instead is:
-    return React.cloneElement(child, { on, toggle })
+    /*
+    if (typeof child.type === "string") {
+      return child
+    }
+    */
+    if (allowedTypes.includes(child.type)) {
+      return React.cloneElement(child, { on, toggle })
+    }
+    return child
   })
 }
 
 const ToggleOn = ({on, children}) => on ? children : null
 const ToggleOff = ({on, children}) => on ? null : children
 const ToggleButton = ({on, toggle}) => <Switch on={on} onClick={toggle} />
+const ToggleNotAllowed = ({on}) => on ? "toggle button is on" : "toggle button is off"
+
+const allowedTypes = [ToggleOn, ToggleOff, ToggleButton]
 
 function App() {
   return (
@@ -29,6 +40,8 @@ function App() {
       <Toggle>
         <ToggleOn>The button is on</ToggleOn>
         <ToggleOff>The button is off</ToggleOff>
+        <span>Testing...</span>
+        <ToggleNotAllowed />
         <ToggleButton />
       </Toggle>
     </div>
