@@ -26,6 +26,22 @@ function toggleReducer(state, {type, initialState}) {
   }
 }
 
+function useControlledSwitchWarning(controlPropValue, controlPropName, componentName) {
+  const isControlled = controlPropValue != null
+  const {current: wasControlled} = React.useRef(isControlled)
+  React.useEffect(() => {
+    warning(
+      !(isControlled && !wasControlled),
+      `\`${componentName}\` is changing from uncontrolled to controlled state. Prop name: \`${controlPropName}\``
+    )
+    warning(
+      !(!isControlled && wasControlled),
+      `\`${componentName}\` is changing from controlled to uncontrolled state. Prop name: \`${controlPropName}\``
+    )
+  }, [isControlled, wasControlled, componentName, controlPropName])
+
+}
+
 function useToggle({
   initialOn = false,
   reducer = toggleReducer,
@@ -39,25 +55,20 @@ function useToggle({
   const onIsControlled = controlledOn != null
   const on = onIsControlled ? controlledOn : state.on
 
-  const {current: onWasControlled} = React.useRef(onIsControlled)
-  React.useEffect(() => {
-    warning(
-      !(onIsControlled && !onWasControlled),
-      "Changing from uncontrolled to controlled state"
-    )
-    warning(
-      !(!onIsControlled && onWasControlled),
-      "Changing from controlled to uncontrolled state"
-    )
-  }, [onIsControlled, onWasControlled])
-
-  const hasOnChange = !!onChange
-  React.useEffect(() => {
-    warning(
-      !(!hasOnChange && !readOnly && onIsControlled),
-      "Something bad!",
-    )
-  }, [hasOnChange, onIsControlled, readOnly])
+  if (process.env.NODE_ENV !== "production") {
+    // fine to run hooks conditionally since NODE_ENV
+    // will not change for the lifetime of the application
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useControlledSwitchWarning(controlledOn, 'on', 'useToggle')
+    const hasOnChange = !!onChange
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      warning(
+        !(!hasOnChange && !readOnly && onIsControlled),
+        "Something bad!",
+      )
+    }, [hasOnChange, onIsControlled, readOnly])
+  }
 
   function dispatchWithOnChange(action) {
     if (!onIsControlled) {
@@ -118,7 +129,7 @@ function App() {
   return (
     <div>
       <div>
-        <Toggle on={bothOn} readOnly={false} />
+        <Toggle on={bothOn} readOnly />
         <Toggle on={bothOn} onChange={handleToggleChange} />
       </div>
       {timesClicked > 4 ? (
